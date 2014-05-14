@@ -1,14 +1,29 @@
 To Do List
 ==========
 
-* Review alternative design options for ManagedService e.g. ManagedService (Managed (View b,Controller a))
-* (Managed) service: keeps and handles
-* Experiment with seal, performGC and wait for termination
-* Recursive event processor: typed version, simplified version
+General
+
+* Renaming: Service (-> AppService?), AppService (-> ModelService?)
 * More examples
 * Tests
 * Benchmarks
 * Haddock documentation
+
+Service
+
+* Review alternative design options for ManagedService e.g. ManagedService (Managed (View b,Controller a))
+* Keeps and handles
+* Experiment with seal, performGC and wait for termination
+* Service/app execution
+* Local/async service deployment options (encapsulate model and service?)
+
+Model
+
+* typed version (not SomeEvent dependent), listt version, simplified version
+
+Event
+
+* Benchmark existential event unwrapping/casting overhead
 
 
 

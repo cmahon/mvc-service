@@ -9,6 +9,7 @@ import           Control.Monad
 import           Data.Profunctor
 import           Data.Monoid                      
 import           MVC
+import           MVC.Event
 import           Prelude                          hiding (id,(.))
 
 -----------------------------------------------------------------------------
@@ -18,7 +19,8 @@ data ServiceCommand =
   | ServicePause 
   | ServiceResume  
   | ServiceStop
-  | ServiceStatus
+  | ServiceReportStatus
+  deriving (Eq,Ord,Show)
 
 data ServiceStatus =
     ServicePending
@@ -85,4 +87,21 @@ toManagedMVC ms = do
   (Service req resp) <- _fromManagedService ms
   return (asSink (void . atomically . send req), asInput resp)
 
+handlesOutput :: (a -> Maybe b) -> Output b -> Output a
+handlesOutput f o = Output $ \a -> case f a of
+  Nothing -> return True
+  Just b  -> send o b
 
+accepts ::  (a -> Maybe b) -> ManagedService b c -> ManagedService a c
+accepts f (ManagedService ms) = ManagedService $ fmap f' ms
+  where
+  f' (Service req resp) = Service (handlesOutput f req) resp 
+
+acceptsEvent :: Event b => ManagedService b c -> ManagedService SomeEvent c
+acceptsEvent = accepts fromEvent 
+
+generatesEvent :: Event b => ManagedService a b -> ManagedService a SomeEvent
+generatesEvent = rmap SomeEvent 
+
+processesEvent :: (Event b, Event c) => ManagedService b c -> ManagedService SomeEvent SomeEvent
+processesEvent = acceptsEvent . generatesEvent

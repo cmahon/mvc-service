@@ -153,5 +153,3 @@ handleEvent = forever $ AppModel (lift await) >>= go
     mapM_ (either go releaseEvent) r
 
 
-
-

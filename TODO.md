@@ -19,7 +19,8 @@ Service
 
 Model
 
-* typed version (not SomeEvent dependent), listt version, simplified version
+* Typed version (not SomeEvent dependent), listt version, simplified version
+* Add AppStateAPI to processEvent
 
 Event
 

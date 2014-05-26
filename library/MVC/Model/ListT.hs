@@ -1,4 +1,4 @@
-module MVC.ListTModel where
+module MVC.Model.ListT where
 
 --Work in progress, pending refactor
 

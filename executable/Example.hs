@@ -65,12 +65,23 @@ newTestAppService api = SomeAppService 0 api (TestAppService 0)
 
 instance AppService (TestAppService a) where
   type AppState (TestAppService a) = a
-  data AppStateAPI (TestAppService a) = TestAppServiceAPI { _testTest :: a -> a}
+  data AppStateAPI (TestAppService a) = TestAppServiceAPI
+    { _testQuery :: a -> Int
+    , _testModify :: a -> a
+    }
   processEvent _ e
     | Just ("inc"::String) <- fromEvent e = do
         api <- getAppStateAPI
-        modifyAppState (_testTest api)
-        noEvents
+        v <- getsAppState (_testQuery api)
+        modifyAppState (_testModify api)
+        v' <- getsAppState (_testQuery api)
+        return
+          [ release . Msg $ "state pre inc: " ++ show v
+          , release . Msg $ "state post inc: " ++ show v'
+          ]
+    | Just ("id"::String) <- fromEvent e = do
+        i <- getAppServiceId
+        return [release . Msg $ "App service id: " ++ show i]
     | otherwise = noEvents
 
 -- App Service: Logger
@@ -93,8 +104,8 @@ newLogAppService = SomeAppService 0 LogAppServiceAPI LogAppService
 
 appServices :: [SomeAppService Int]
 appServices = initialiseAppServices
-  [ newTestAppService (TestAppServiceAPI (+1)) 
-  , newLogAppService
+  [ newLogAppService
+  , newTestAppService (TestAppServiceAPI id (+1)) 
   ]
 
 -- Model

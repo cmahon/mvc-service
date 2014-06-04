@@ -17,7 +17,8 @@ import           Data.Monoid
 import           Data.Typeable                    
 import           MVC
 import           MVC.Event                        hiding (handleEvent)
-import           MVC.Model                        
+--import           MVC.Model                      
+import           MVC.Model.Pure
 import           MVC.Prelude
 import           MVC.Service
 import qualified Pipes.Prelude                    as P
@@ -60,11 +61,13 @@ data TestAppService a = TestAppService
   { _testCount :: Int
   }
 
-newTestAppService :: AppStateAPI (TestAppService a) -> SomeAppService a
+newTestAppService :: AppStateAPI (TestAppService a) -> SomeAppService SomeEvent SomeEvent a
 newTestAppService api = SomeAppService 0 api (TestAppService 0)
 
 instance AppService (TestAppService a) where
   type AppState (TestAppService a) = a
+  type EventIn (TestAppService a) = SomeEvent
+  type EventOut (TestAppService a) = SomeEvent
   data AppStateAPI (TestAppService a) = TestAppServiceAPI
     { _testQuery :: a -> Int
     , _testModify :: a -> a
@@ -76,12 +79,12 @@ instance AppService (TestAppService a) where
         modifyAppState (_testModify api)
         v' <- getsAppState (_testQuery api)
         return
-          [ release . Msg $ "state pre inc: " ++ show v
-          , release . Msg $ "state post inc: " ++ show v'
+          [ releaseEvent . Msg $ "state pre inc: " ++ show v
+          , releaseEvent . Msg $ "state post inc: " ++ show v'
           ]
     | Just ("id"::String) <- fromEvent e = do
         i <- getAppServiceId
-        return [release . Msg $ "App service id: " ++ show i]
+        return [releaseEvent . Msg $ "App service id: " ++ show i]
     | otherwise = noEvents
 
 -- App Service: Logger
@@ -94,18 +97,20 @@ data LogAppService a = LogAppService
 
 instance AppService (LogAppService a) where
   type AppState (LogAppService a) = a
+  type EventIn (LogAppService a) = SomeEvent
+  type EventOut (LogAppService a) = SomeEvent
   data AppStateAPI (LogAppService a) = LogAppServiceAPI
-  processEvent _ e = return [release . Msg $ show e]
+  processEvent _ e = return [releaseEvent . Msg $ show e]
 
-newLogAppService :: SomeAppService a
+newLogAppService :: SomeAppService SomeEvent SomeEvent a
 newLogAppService = SomeAppService 0 LogAppServiceAPI LogAppService
 
 -- App services
 
-appServices :: [SomeAppService Int]
+appServices :: [SomeAppService SomeEvent SomeEvent Int]
 appServices = initialiseAppServices
   [ newLogAppService
-  , newTestAppService (TestAppServiceAPI id (+1)) 
+  , newTestAppService (TestAppServiceAPI id (+1))
   ]
 
 -- Model

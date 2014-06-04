@@ -52,11 +52,13 @@ data SomeAppService :: * -> * -> * -> * where
   SomeAppService :: (AppService s, AppState s ~ a, EventIn s ~ b, EventOut s ~ c) => 
     { _asId :: Int
     , _asAPI :: AppStateAPI s
+    , _asEventIn :: b' -> Maybe b
+    , _asEventOut :: Either b c -> Either b' c'
     , _asAppService :: s
-    } -> SomeAppService b c a
+    } -> SomeAppService b' c' a
 
 asId :: Functor f => LensLike' f (SomeAppService b c a) Int
-asId f (SomeAppService i a s) = (\i' -> SomeAppService i' a s) <$> f i
+asId f (SomeAppService i a ein eout s) = (\i' -> SomeAppService i' a ein eout s) <$> f i
 
 -----------------------------------------------------------------------------
 
@@ -85,12 +87,16 @@ runAppModel :: [SomeAppService b c a] -> AppModel b c a r -> AppPipe b c a r
 runAppModel appservices (AppModel appmodel) = S.evalStateT appmodel appservices 
 
 runAppServiceModel :: SomeAppService b c a -> a -> b -> ([Either b c],SomeAppService b c a,a)
-runAppServiceModel SomeAppService{..} appstate event = 
-  let
-    (AppServiceModel appServiceModel) = processEvent _asAppService event
-    ((events,appservice'),appstate') = S.runState (S.runStateT (R.runReaderT appServiceModel (_asId,_asAPI)) _asAppService) appstate
-  in 
-    (events,(SomeAppService _asId _asAPI appservice'),appstate')
+runAppServiceModel appservice@SomeAppService{..} appstate event = 
+  maybe ignore process (_asEventIn event)
+  where 
+  ignore = ([],appservice,appstate)
+  process event' = 
+    let
+      (AppServiceModel appServiceModel) = processEvent _asAppService event'
+      ((events,appservice'),appstate') = S.runState (S.runStateT (R.runReaderT appServiceModel (_asId,_asAPI)) _asAppService) appstate
+    in 
+      (map _asEventOut events,(SomeAppService _asId _asAPI _asEventIn _asEventOut appservice'),appstate')
 
 getAppServiceId :: AppServiceModel a Int
 getAppServiceId = AppServiceModel (R.asks fst)

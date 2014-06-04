@@ -12,12 +12,12 @@
 module Main where
 
 import           Control.Category
-import           Control.Monad           
+import           Control.Monad  
+import           Data.Maybe                       (fromJust)         
 import           Data.Monoid  
 import           Data.Typeable                    
 import           MVC
 import           MVC.Event                        hiding (handleEvent)
---import           MVC.Model                      
 import           MVC.Model.Pure
 import           MVC.Prelude
 import           MVC.Service
@@ -46,8 +46,6 @@ model = asPipe (P.takeWhile (/= "quit"))
 -----------------------------------------------------------------------------
 -- Example 2
 
--- Services: SomeEvent-wrapped stdin & stdout
-
 instance Event String
 
 external' :: Managed (View SomeEvent, Controller SomeEvent)
@@ -55,14 +53,12 @@ external' = do
   c <- stdinLines
   return (contramap show stdoutLines,fmap SomeEvent c)
 
--- App Service: Incrementer
-
 data TestAppService a = TestAppService
   { _testCount :: Int
   }
 
 newTestAppService :: AppStateAPI (TestAppService a) -> SomeAppService SomeEvent SomeEvent a
-newTestAppService api = SomeAppService 0 api (TestAppService 0)
+newTestAppService api = SomeAppService 0 api Just id (TestAppService 0)
 
 instance AppService (TestAppService a) where
   type AppState (TestAppService a) = a
@@ -87,8 +83,6 @@ instance AppService (TestAppService a) where
         return [releaseEvent . Msg $ "App service id: " ++ show i]
     | otherwise = noEvents
 
--- App Service: Logger
-
 data Msg = Msg String deriving (Typeable,Show)
 
 instance Event Msg
@@ -103,17 +97,13 @@ instance AppService (LogAppService a) where
   processEvent _ e = return [releaseEvent . Msg $ show e]
 
 newLogAppService :: SomeAppService SomeEvent SomeEvent a
-newLogAppService = SomeAppService 0 LogAppServiceAPI LogAppService
-
--- App services
+newLogAppService = SomeAppService 0 LogAppServiceAPI Just id LogAppService
 
 appServices :: [SomeAppService SomeEvent SomeEvent Int]
 appServices = initialiseAppServices
   [ newLogAppService
   , newTestAppService (TestAppServiceAPI id (+1))
   ]
-
--- Model
 
 model' :: Model Int SomeEvent SomeEvent
 model' = asPipe (P.takeWhile (not . done)) >>> asPipe (runAppModel appServices handleEvent)
@@ -122,6 +112,38 @@ model' = asPipe (P.takeWhile (not . done)) >>> asPipe (runAppModel appServices h
     | Just ("quit" :: String) <- fromEvent e = True 
     | otherwise = False
 
+-----------------------------------------------------------------------------
+-- Example 3
+
+external'' :: Managed (View Msg, Controller String)
+external'' = do
+  c <- stdinLines
+  return (contramap show stdoutLines,c)
+
+newTestAppService' :: AppStateAPI (TestAppService a) -> SomeAppService String Msg a
+newTestAppService' api = SomeAppService 0 api (Just . SomeEvent) eventOut (TestAppService 0)
+  where
+  eventOut (Left x) = Left (fromJust $ fromEvent x)
+  eventOut (Right x) = Right (fromJust $ fromEvent x)
+
+newLogAppService' :: SomeAppService String Msg a
+newLogAppService' = SomeAppService 0 LogAppServiceAPI (Just . SomeEvent) eventOut LogAppService
+  where
+  eventOut (Left x) = Left (fromJust $ fromEvent x)
+  eventOut (Right x) = Right (fromJust $ fromEvent x)
+
+appServices' :: [SomeAppService String Msg Int]
+appServices' = initialiseAppServices
+  [ newLogAppService'
+  , newTestAppService' (TestAppServiceAPI id (+1))
+  ]
+
+model'' :: Model Int String Msg
+model'' = asPipe (P.takeWhile (not . done)) >>> asPipe (runAppModel appServices' handleEvent)
+  where 
+  done "quit" = True
+  done _ = False
+
 -- -----------------------------------------------------------------------------
 -- Main
 
@@ -129,3 +151,6 @@ main :: IO ()
 main = do
   print =<< runMVC () model external
   print =<< runMVC 0 model' external'
+  print =<< runMVC 0 model'' external''
+
+

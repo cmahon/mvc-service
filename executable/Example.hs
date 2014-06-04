@@ -120,17 +120,15 @@ external'' = do
   c <- stdinLines
   return (contramap show stdoutLines,c)
 
+eventOut :: Either SomeEvent SomeEvent -> Either String Msg
+eventOut (Left x) = Left (fromJust $ fromEvent x)
+eventOut (Right x) = Right (fromJust $ fromEvent x)
+
 newTestAppService' :: AppStateAPI (TestAppService a) -> SomeAppService String Msg a
 newTestAppService' api = SomeAppService 0 api (Just . SomeEvent) eventOut (TestAppService 0)
-  where
-  eventOut (Left x) = Left (fromJust $ fromEvent x)
-  eventOut (Right x) = Right (fromJust $ fromEvent x)
 
 newLogAppService' :: SomeAppService String Msg a
 newLogAppService' = SomeAppService 0 LogAppServiceAPI (Just . SomeEvent) eventOut LogAppService
-  where
-  eventOut (Left x) = Left (fromJust $ fromEvent x)
-  eventOut (Right x) = Right (fromJust $ fromEvent x)
 
 appServices' :: [SomeAppService String Msg Int]
 appServices' = initialiseAppServices

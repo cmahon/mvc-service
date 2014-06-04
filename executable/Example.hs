@@ -11,6 +11,7 @@
 
 module Main where
 
+import           Control.Arrow                    ((+++))
 import           Control.Category
 import           Control.Monad  
 import           Data.Maybe                       (fromJust)         
@@ -121,8 +122,9 @@ external'' = do
   return (contramap show stdoutLines,c)
 
 eventOut :: Either SomeEvent SomeEvent -> Either String Msg
-eventOut (Left x) = Left (fromJust $ fromEvent x)
-eventOut (Right x) = Right (fromJust $ fromEvent x)
+eventOut = extract +++ extract
+  where
+  extract = fromJust . fromEvent 
 
 newTestAppService' :: AppStateAPI (TestAppService a) -> SomeAppService String Msg a
 newTestAppService' api = SomeAppService 0 api (Just . SomeEvent) eventOut (TestAppService 0)

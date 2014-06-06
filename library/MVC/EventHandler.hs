@@ -40,12 +40,12 @@ newtype HandleEvent v r =
 
 type HandleEventResult a b v = HandleEvent v [Either a b]
 
-class HandlesEvent a where
-  type AppState a :: *
-  type EventIn a :: *
-  type EventOut a :: *
-  data AppStateAPI a :: *
-  handleEvent :: a -> EventIn a -> HandleEventResult (EventIn a) (EventOut a) a
+class HandlesEvent v where
+  type AppState v :: *
+  type EventIn v :: *
+  type EventOut v :: *
+  data AppStateAPI v :: *
+  handleEvent :: v -> EventIn v -> HandleEventResult (EventIn v) (EventOut v) v
 
 data SomeEventHandler :: * -> * -> * -> * where
   SomeEventHandler :: (HandlesEvent v, AppState v ~ s, EventIn v ~ a, EventOut v ~ b) => 

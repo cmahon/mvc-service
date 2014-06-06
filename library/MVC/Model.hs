@@ -22,7 +22,11 @@ import           Pipes
 
 import           MVC.Event
 
------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+-- Note: superseded by EventHandler, will be retired when dependencies migrated
+
+-------------------------------------------------------------------------------
 
 type AppPipe a = 
   Pipe SomeEvent SomeEvent (State a) 

@@ -3,7 +3,6 @@ To Do List
 
 General
 
-* Renaming: Service (-> AppService?), AppService (-> ModelService?)
 * More examples
 * Tests
 * Benchmarks
@@ -19,8 +18,11 @@ Service
 
 Model
 
-* Typed version (not SomeEvent dependent), listt version, simplified version
+* Retire Model (EventHandler replaces it when dependencoes migrated)
+* listt version, simplified version
 * Add AppStateAPI to processEvent
+* Generalised recursive processing interface (e.g. like ArrowLoop)
+* Sample event handlers e.g. logger
 
 Event
 

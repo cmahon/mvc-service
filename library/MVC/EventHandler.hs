@@ -20,7 +20,7 @@ import           Lens.Family                      (over,LensLike',set)
 import           Lens.Family.State.Strict         (zoom)
 import           Pipes
 
-import           MVC.Event                        (EitherSomeEvent,Event,Msg(..),SomeEvent(..))
+import           MVC.Event                        (EitherSomeEvent,Event,Msg(..),SomeEvent(..),toEitherSomeEvent)
 
 -----------------------------------------------------------------------------
 
@@ -62,6 +62,9 @@ ehId f (SomeEventHandler i a ein eout s) = (\i' -> SomeEventHandler i' a ein eou
 newtype EventHandler a b s = 
   EventHandler { _eventHandlers :: [SomeEventHandler a b s] }
   deriving (Monoid)
+
+mkEventHandler :: SomeEventHandler a b s -> EventHandler a b s
+mkEventHandler = EventHandler . (:[])
 
 eventHandlers :: Functor f => LensLike' f (EventHandler a b s) [SomeEventHandler a b s]
 eventHandlers f (EventHandler h) = (\h' -> EventHandler h') <$> f h
@@ -169,26 +172,28 @@ noEvents = return []
 propagate :: b -> Either b c
 propagate = Left 
 
-propagateEvent :: Event b => b -> EitherSomeEvent
-propagateEvent = propagate . SomeEvent 
+propagate' :: Event b => b -> EitherSomeEvent
+propagate' = propagate . SomeEvent 
 
 release :: c -> Either b c
 release = Right
 
-releaseEvent :: Event c => c -> EitherSomeEvent
-releaseEvent = release . SomeEvent 
+release' :: Event c => c -> EitherSomeEvent
+release' = release . SomeEvent 
 
----
+-----------------------------------------------------------------------------
 
 data LogEventHandler s = LogEventHandler
 
 instance HandlesEvent (LogEventHandler s) where
-  type AppState (LogEventHandler a) = a
-  type EventIn (LogEventHandler a) = String
-  type EventOut (LogEventHandler a) = Msg
-  data AppStateAPI (LogEventHandler a) = LogEventHandlerAPI
+  type AppState (LogEventHandler s) = s
+  type EventIn (LogEventHandler s) = String
+  type EventOut (LogEventHandler s) = Msg
+  data AppStateAPI (LogEventHandler s) = LogEventHandlerAPI
   handleEvent _ = return . (:[]) . release . Msg
 
 newLogEventHandler :: (a -> Maybe String) -> (Either String Msg -> Either a b) -> EventHandler a b s
 newLogEventHandler ein eout = EventHandler [SomeEventHandler 0 LogEventHandlerAPI ein eout LogEventHandler]
 
+newLogEventHandler' :: EventHandler SomeEvent SomeEvent s
+newLogEventHandler' = newLogEventHandler (Just . show) toEitherSomeEvent

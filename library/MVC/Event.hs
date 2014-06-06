@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module MVC.Event where
 
@@ -44,6 +45,8 @@ data Msg = Msg String deriving (Typeable)
 instance Show Msg where show (Msg x) = show x
 
 instance Event Msg
+
+instance Event String
 
 
 

@@ -44,8 +44,6 @@ model = asPipe (P.takeWhile (/= "quit"))
 -----------------------------------------------------------------------------
 -- Example 2
 
-instance Event String
-
 external' :: Managed (View SomeEvent, Controller SomeEvent)
 external' = do
   c <- stdinLines
@@ -56,7 +54,7 @@ data TestEventHandler a = TestEventHandler
   }
 
 newTestEventHandler :: AppStateAPI (TestEventHandler a) -> EventHandler SomeEvent SomeEvent a
-newTestEventHandler api = EventHandler [SomeEventHandler 0 api Just id (TestEventHandler 0)]
+newTestEventHandler api = mkEventHandler $ SomeEventHandler 0 api Just id (TestEventHandler 0)
 
 instance HandlesEvent (TestEventHandler a) where
   type AppState (TestEventHandler a) = a
@@ -73,12 +71,12 @@ instance HandlesEvent (TestEventHandler a) where
         modifyAppState (_testModify api)
         v' <- getsAppState (_testQuery api)
         return
-          [ releaseEvent . Msg $ "state pre inc: " ++ show v
-          , releaseEvent . Msg $ "state post inc: " ++ show v'
+          [ release' . Msg $ "state pre inc: " ++ show v
+          , release' . Msg $ "state post inc: " ++ show v'
           ]
     | Just ("id"::String) <- fromEvent e = do
         i <- getEventHandlerId
-        return [releaseEvent . Msg $ "App service id: " ++ show i]
+        return [release' . Msg $ "App service id: " ++ show i]
     | otherwise = noEvents
 
 eventHandler :: EventHandler SomeEvent SomeEvent Int
@@ -103,7 +101,7 @@ external'' = do
   return (contramap show stdoutLines,c)
 
 newTestEventHandler' :: AppStateAPI (TestEventHandler a) -> EventHandler String Msg a
-newTestEventHandler' api = EventHandler [SomeEventHandler 0 api (Just . SomeEvent) fromEitherSomeEvent (TestEventHandler 0)]
+newTestEventHandler' api = mkEventHandler $ SomeEventHandler 0 api (Just . SomeEvent) fromEitherSomeEvent (TestEventHandler 0)
 
 eventHandler' :: EventHandler String Msg Int
 eventHandler' = initialiseEventHandler $ mconcat

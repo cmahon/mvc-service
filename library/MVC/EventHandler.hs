@@ -20,7 +20,7 @@ import           Lens.Family                      (over,LensLike',set)
 import           Lens.Family.State.Strict         (zoom)
 import           Pipes
 
-import           MVC.Event                        (EitherSomeEvent,Event,SomeEvent(..))
+import           MVC.Event                        (EitherSomeEvent,Event,Msg(..),SomeEvent(..))
 
 -----------------------------------------------------------------------------
 
@@ -177,4 +177,18 @@ release = Right
 
 releaseEvent :: Event c => c -> EitherSomeEvent
 releaseEvent = release . SomeEvent 
+
+---
+
+data LogEventHandler s = LogEventHandler
+
+instance HandlesEvent (LogEventHandler s) where
+  type AppState (LogEventHandler a) = a
+  type EventIn (LogEventHandler a) = String
+  type EventOut (LogEventHandler a) = Msg
+  data AppStateAPI (LogEventHandler a) = LogEventHandlerAPI
+  handleEvent _ = return . (:[]) . release . Msg
+
+newLogEventHandler :: (a -> Maybe String) -> (Either String Msg -> Either a b) -> EventHandler a b s
+newLogEventHandler ein eout = EventHandler [SomeEventHandler 0 LogEventHandlerAPI ein eout LogEventHandler]
 

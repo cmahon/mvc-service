@@ -11,12 +11,9 @@
 
 module Main where
 
-import           Control.Arrow                    ((+++))
 import           Control.Category
 import           Control.Monad  
-import           Data.Maybe                       (fromJust)         
 import           Data.Monoid  
-import           Data.Typeable                    
 import           MVC
 import           MVC.Event                        hiding (handleEvent)
 import           MVC.EventHandler
@@ -84,25 +81,9 @@ instance HandlesEvent (TestEventHandler a) where
         return [releaseEvent . Msg $ "App service id: " ++ show i]
     | otherwise = noEvents
 
-data Msg = Msg String deriving (Typeable,Show)
-
-instance Event Msg
-
-data LogEventHandler a = LogEventHandler
-
-instance HandlesEvent (LogEventHandler a) where
-  type AppState (LogEventHandler a) = a
-  type EventIn (LogEventHandler a) = SomeEvent
-  type EventOut (LogEventHandler a) = SomeEvent
-  data AppStateAPI (LogEventHandler a) = LogEventHandlerAPI
-  handleEvent _ e = return [releaseEvent . Msg $ show e]
-
-newLogEventHandler :: EventHandler SomeEvent SomeEvent a
-newLogEventHandler = EventHandler [SomeEventHandler 0 LogEventHandlerAPI Just id LogEventHandler]
-
 eventHandler :: EventHandler SomeEvent SomeEvent Int
 eventHandler = initialiseEventHandler $ mconcat
-  [ newLogEventHandler
+  [ newLogEventHandler (Just . show) toEitherSomeEvent
   , newTestEventHandler (TestEventHandlerAPI id (+1))
   ]
 
@@ -121,20 +102,12 @@ external'' = do
   c <- stdinLines
   return (contramap show stdoutLines,c)
 
-eventOut :: Either SomeEvent SomeEvent -> Either String Msg
-eventOut = extract +++ extract
-  where
-  extract = fromJust . fromEvent 
-
 newTestEventHandler' :: AppStateAPI (TestEventHandler a) -> EventHandler String Msg a
-newTestEventHandler' api = EventHandler [SomeEventHandler 0 api (Just . SomeEvent) eventOut (TestEventHandler 0)]
-
-newLogEventHandler' ::EventHandler String Msg a
-newLogEventHandler' = EventHandler [SomeEventHandler 0 LogEventHandlerAPI (Just . SomeEvent) eventOut LogEventHandler]
+newTestEventHandler' api = EventHandler [SomeEventHandler 0 api (Just . SomeEvent) fromEitherSomeEvent (TestEventHandler 0)]
 
 eventHandler' :: EventHandler String Msg Int
 eventHandler' = initialiseEventHandler $ mconcat
-  [ newLogEventHandler'
+  [ newLogEventHandler (Just . show) id
   , newTestEventHandler' (TestEventHandlerAPI id (+1))
   ]
 

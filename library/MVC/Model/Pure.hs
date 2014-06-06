@@ -38,8 +38,7 @@ newtype AppServiceModel a r =
   AppServiceModel (ReaderT (Int,AppStateAPI a) (StateT a (State (AppState a))) r) 
   deriving (Functor,Applicative,Monad,MonadReader (Int,AppStateAPI a))
 
-type AppServiceModelEvents b c a = 
-  AppServiceModel a [Either b c]
+type AppServiceModelEvents b c a = AppServiceModel a [Either b c]
 
 class AppService a where
   type AppState a :: *
@@ -59,6 +58,39 @@ data SomeAppService :: * -> * -> * -> * where
 
 asId :: Functor f => LensLike' f (SomeAppService b c a) Int
 asId f (SomeAppService i a ein eout s) = (\i' -> SomeAppService i' a ein eout s) <$> f i
+
+-----------------------------------------------------------------------------
+
+runAppServices :: [SomeAppService b c a] -> AppPipe b c a r
+runAppModel = flip runAppModel appServicesModel
+
+runAppModel :: [SomeAppService b c a] -> AppModel b c a r -> AppPipe b c a r
+runAppModel appservices (AppModel appmodel) = S.evalStateT appmodel appservices 
+
+appServicesModel :: AppModel b c a ()
+appServicesModel = forever $ AppModel (lift await) >>= go
+  where 
+  go e = do
+    r <- forAppServices $ do
+      appSvc <- getAppServiceM
+      appState <- getAppStateM 
+      let (r,appSvc',appState') = runAppService appSvc appState e  
+      putAppServiceM appSvc'
+      putAppStateM appState'
+      return r
+    mapM_ (either go releaseM) r
+
+runAppServic :: SomeAppService b c a -> a -> b -> ([Either b c],SomeAppService b c a,a)
+runAppService appservice@SomeAppService{..} appstate event = 
+  maybe ignore process (_asEventIn event)
+  where 
+  ignore = ([],appservice,appstate)
+  process event' = 
+    let
+      (AppServiceModel appServiceModel) = processEvent _asAppService event'
+      ((events,appservice'),appstate') = S.runState (S.runStateT (R.runReaderT appServiceModel (_asId,_asAPI)) _asAppService) appstate
+    in 
+      (map _asEventOut events,(SomeAppService _asId _asAPI _asEventIn _asEventOut appservice'),appstate')
 
 -----------------------------------------------------------------------------
 
@@ -83,20 +115,6 @@ getAppStateM = AppModel' $ lift $ lift S.get
 putAppStateM :: a -> AppModel' b c a ()
 putAppStateM = AppModel' . lift . lift . S.put
 
-runAppModel :: [SomeAppService b c a] -> AppModel b c a r -> AppPipe b c a r
-runAppModel appservices (AppModel appmodel) = S.evalStateT appmodel appservices 
-
-runAppServiceModel :: SomeAppService b c a -> a -> b -> ([Either b c],SomeAppService b c a,a)
-runAppServiceModel appservice@SomeAppService{..} appstate event = 
-  maybe ignore process (_asEventIn event)
-  where 
-  ignore = ([],appservice,appstate)
-  process event' = 
-    let
-      (AppServiceModel appServiceModel) = processEvent _asAppService event'
-      ((events,appservice'),appstate') = S.runState (S.runStateT (R.runReaderT appServiceModel (_asId,_asAPI)) _asAppService) appstate
-    in 
-      (map _asEventOut events,(SomeAppService _asId _asAPI _asEventIn _asEventOut appservice'),appstate')
 
 getAppServiceId :: AppServiceModel a Int
 getAppServiceId = AppServiceModel (R.asks fst)
@@ -151,18 +169,4 @@ release = Right
 
 releaseEvent :: Event c => c -> EitherSomeEvent
 releaseEvent = release . SomeEvent 
-
-handleEvent :: AppModel b c a ()
-handleEvent = forever $ AppModel (lift await) >>= go
-  where 
-  go e = do
-    r <- forAppServices $ do
-      appSvc <- getAppServiceM
-      appState <- getAppStateM 
-      let (r,appSvc',appState') = runAppServiceModel appSvc appState e  
-      putAppServiceM appSvc'
-      putAppStateM appState'
-      return r
-    mapM_ (either go releaseM) r
-
 

@@ -19,7 +19,7 @@ import           Data.Monoid
 import           Data.Typeable                    
 import           MVC
 import           MVC.Event                        hiding (handleEvent)
-import           MVC.Model.Pure
+import           MVC.EventHandler
 import           MVC.Prelude
 import           MVC.Service
 import qualified Pipes.Prelude                    as P
@@ -54,22 +54,22 @@ external' = do
   c <- stdinLines
   return (contramap show stdoutLines,fmap SomeEvent c)
 
-data TestAppService a = TestAppService
+data TestEventHandler a = TestEventHandler
   { _testCount :: Int
   }
 
-newTestAppService :: AppStateAPI (TestAppService a) -> SomeAppService SomeEvent SomeEvent a
-newTestAppService api = SomeAppService 0 api Just id (TestAppService 0)
+newTestEventHandler :: AppStateAPI (TestEventHandler a) -> EventHandler SomeEvent SomeEvent a
+newTestEventHandler api = EventHandler [SomeEventHandler 0 api Just id (TestEventHandler 0)]
 
-instance AppService (TestAppService a) where
-  type AppState (TestAppService a) = a
-  type EventIn (TestAppService a) = SomeEvent
-  type EventOut (TestAppService a) = SomeEvent
-  data AppStateAPI (TestAppService a) = TestAppServiceAPI
+instance HandlesEvent (TestEventHandler a) where
+  type AppState (TestEventHandler a) = a
+  type EventIn (TestEventHandler a) = SomeEvent
+  type EventOut (TestEventHandler a) = SomeEvent
+  data AppStateAPI (TestEventHandler a) = TestEventHandlerAPI
     { _testQuery :: a -> Int
     , _testModify :: a -> a
     }
-  processEvent _ e
+  handleEvent _ e
     | Just ("inc"::String) <- fromEvent e = do
         api <- getAppStateAPI
         v <- getsAppState (_testQuery api)
@@ -80,7 +80,7 @@ instance AppService (TestAppService a) where
           , releaseEvent . Msg $ "state post inc: " ++ show v'
           ]
     | Just ("id"::String) <- fromEvent e = do
-        i <- getAppServiceId
+        i <- getEventHandlerId
         return [releaseEvent . Msg $ "App service id: " ++ show i]
     | otherwise = noEvents
 
@@ -88,26 +88,26 @@ data Msg = Msg String deriving (Typeable,Show)
 
 instance Event Msg
 
-data LogAppService a = LogAppService
+data LogEventHandler a = LogEventHandler
 
-instance AppService (LogAppService a) where
-  type AppState (LogAppService a) = a
-  type EventIn (LogAppService a) = SomeEvent
-  type EventOut (LogAppService a) = SomeEvent
-  data AppStateAPI (LogAppService a) = LogAppServiceAPI
-  processEvent _ e = return [releaseEvent . Msg $ show e]
+instance HandlesEvent (LogEventHandler a) where
+  type AppState (LogEventHandler a) = a
+  type EventIn (LogEventHandler a) = SomeEvent
+  type EventOut (LogEventHandler a) = SomeEvent
+  data AppStateAPI (LogEventHandler a) = LogEventHandlerAPI
+  handleEvent _ e = return [releaseEvent . Msg $ show e]
 
-newLogAppService :: SomeAppService SomeEvent SomeEvent a
-newLogAppService = SomeAppService 0 LogAppServiceAPI Just id LogAppService
+newLogEventHandler :: EventHandler SomeEvent SomeEvent a
+newLogEventHandler = EventHandler [SomeEventHandler 0 LogEventHandlerAPI Just id LogEventHandler]
 
-appServices :: [SomeAppService SomeEvent SomeEvent Int]
-appServices = initialiseAppServices
-  [ newLogAppService
-  , newTestAppService (TestAppServiceAPI id (+1))
+eventHandler :: EventHandler SomeEvent SomeEvent Int
+eventHandler = initialiseEventHandler $ mconcat
+  [ newLogEventHandler
+  , newTestEventHandler (TestEventHandlerAPI id (+1))
   ]
 
 model' :: Model Int SomeEvent SomeEvent
-model' = asPipe (P.takeWhile (not . done)) >>> asPipe (runAppModel appServices handleEvent)
+model' = asPipe (P.takeWhile (not . done)) >>> asPipe (runRecursiveEventHandler eventHandler)
   where 
   done e
     | Just ("quit" :: String) <- fromEvent e = True 
@@ -126,20 +126,20 @@ eventOut = extract +++ extract
   where
   extract = fromJust . fromEvent 
 
-newTestAppService' :: AppStateAPI (TestAppService a) -> SomeAppService String Msg a
-newTestAppService' api = SomeAppService 0 api (Just . SomeEvent) eventOut (TestAppService 0)
+newTestEventHandler' :: AppStateAPI (TestEventHandler a) -> EventHandler String Msg a
+newTestEventHandler' api = EventHandler [SomeEventHandler 0 api (Just . SomeEvent) eventOut (TestEventHandler 0)]
 
-newLogAppService' :: SomeAppService String Msg a
-newLogAppService' = SomeAppService 0 LogAppServiceAPI (Just . SomeEvent) eventOut LogAppService
+newLogEventHandler' ::EventHandler String Msg a
+newLogEventHandler' = EventHandler [SomeEventHandler 0 LogEventHandlerAPI (Just . SomeEvent) eventOut LogEventHandler]
 
-appServices' :: [SomeAppService String Msg Int]
-appServices' = initialiseAppServices
-  [ newLogAppService'
-  , newTestAppService' (TestAppServiceAPI id (+1))
+eventHandler' :: EventHandler String Msg Int
+eventHandler' = initialiseEventHandler $ mconcat
+  [ newLogEventHandler'
+  , newTestEventHandler' (TestEventHandlerAPI id (+1))
   ]
 
 model'' :: Model Int String Msg
-model'' = asPipe (P.takeWhile (not . done)) >>> asPipe (runAppModel appServices' handleEvent)
+model'' = asPipe (P.takeWhile (not . done)) >>> asPipe (runRecursiveEventHandler eventHandler')
   where 
   done "quit" = True
   done _ = False

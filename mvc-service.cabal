@@ -2,7 +2,7 @@ Name:                     mvc-service
 Version:                  0.1
 Synopsis:                 MVC Service
 Description:              MVC Service
-License:                  MIT
+License:                  BSD3
 License-File:             LICENSE
 Author:                   Chris Mahon
 Maintainer:               cnmahon@gmail.com

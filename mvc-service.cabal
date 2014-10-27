@@ -22,18 +22,24 @@ Library
   default-language:       Haskell2010
   exposed-modules:        MVC.Event,
                           MVC.EventHandler,
-                          MVC.Service
-  -- other-modules:          
+                          MVC.Service,
+                          MVC.Socket
   build-depends:          base >= 4 && < 5,
                           async >= 2.0.1.4,
-                          lens-family-core >= 1.0.0,
-                          mtl >= 2.0.1.0 && < 2.2,
+                          bytestring >= 0.10.0.2,
+                          data-default >= 0.5.3,
+                          hslogger >= 1.2.4,
+                          hslogger-template >= 2.0.2,
+                          lens >= 4.0,
+                          mtl >= 2.1.2,
                           mvc >= 1.0.0,
+                          network-simple >= 0.3.0,
                           pipes >= 4.1.0,
                           pipes-concurrency >= 2.0.2,
+                          pipes-network >= 0.6.2,
                           profunctors >= 4.0.0,
                           stm >= 2.4.2,
-                          transformers >= 0.2.0.0 && < 0.4 
+                          transformers >= 0.3.0.0
 
 Executable example
   main-is:                Example.hs
@@ -48,6 +54,29 @@ Executable example
                           pipes-concurrency >= 2.0.2,
                           profunctors >= 4.0.0,
                           stm >= 2.4.2
+
+Executable sockettest
+  main-is:                SocketTest.hs
+  default-language:       Haskell2010
+  ghc-options:            -Wall -O2 -threaded -fprof-auto -rtsopts
+  hs-source-dirs:         executable
+  build-depends:          base >= 4 && < 5,
+                          async >= 2.0.1.4,
+                          bytestring >= 0.10.0.2,
+                          data-default >= 0.5.3,
+                          hslogger >= 1.2.4,
+                          hslogger-template >= 2.0.2,
+                          lens >= 4.0,
+                          mtl >= 2.1.2,
+                          mvc >= 1.0.0,
+                          mvc-service >= 0.1,
+                          network-simple >= 0.3.0,
+                          pipes >= 4.1.0,
+                          pipes-concurrency >= 2.0.2,
+                          pipes-network >= 0.6.2,
+                          profunctors >= 4.0.0,
+                          stm >= 2.4.2,
+                          transformers >= 0.3.0.0
 
 test-suite tasty
   main-is:                Tasty.hs

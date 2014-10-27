@@ -26,6 +26,7 @@ data ServiceStatus =
     ServicePending
   | ServiceActivating
   | ServiceActive
+  | ServicePausing
   | ServiceTerminating
   | ServiceTerminated
     deriving (Eq,Ord,Show)

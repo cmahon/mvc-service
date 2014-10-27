@@ -7,6 +7,7 @@
 module MVC.EventHandler where
 
 import           Control.Applicative
+import           Control.Lens
 import           Control.Monad
 import           Control.Monad.Reader             (MonadReader (..))
 import           Control.Monad.State              (MonadState (..))
@@ -15,9 +16,6 @@ import qualified Control.Monad.Trans.Reader       as R
 import           Control.Monad.Trans.State.Strict (State, StateT)
 import qualified Control.Monad.Trans.State.Strict as S
 import           Data.Monoid
-import           Data.Traversable                 (traverse)
-import           Lens.Family                      (over,LensLike',set)
-import           Lens.Family.State.Strict         (zoom)
 import           Pipes
 
 import           MVC.Event                        (EitherSomeEvent,Event,Msg(..),SomeEvent(..),toEitherSomeEvent)
@@ -56,7 +54,7 @@ data SomeEventHandler :: * -> * -> * -> * where
     , _ehEventHandler :: v
     } -> SomeEventHandler a' b' s
 
-ehId :: Functor f => LensLike' f (SomeEventHandler a b v) Int
+ehId :: Lens' (SomeEventHandler a b v) Int
 ehId f (SomeEventHandler i a ein eout s) = (\i' -> SomeEventHandler i' a ein eout s) <$> f i
 
 newtype EventHandler a b s = 
@@ -66,7 +64,7 @@ newtype EventHandler a b s =
 mkEventHandler :: SomeEventHandler a b s -> EventHandler a b s
 mkEventHandler = EventHandler . (:[])
 
-eventHandlers :: Functor f => LensLike' f (EventHandler a b s) [SomeEventHandler a b s]
+eventHandlers :: Lens' (EventHandler a b s) [SomeEventHandler a b s]
 eventHandlers f (EventHandler h) = (\h' -> EventHandler h') <$> f h
 
 initialiseEventHandler :: EventHandler a b s -> EventHandler a b s

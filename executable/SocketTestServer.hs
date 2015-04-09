@@ -1,7 +1,6 @@
 module Main where
 
 import Control.Concurrent
-import Control.Concurrent.STM
 import Control.Concurrent.Async
 import System.IO
 import Control.Exception

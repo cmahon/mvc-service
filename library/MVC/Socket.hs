@@ -151,6 +151,10 @@ connectionReader buffer conn nbytes status = managed $ \k -> do
     sealAll :: IO ()
     sealAll = atomically sOut
 
+    -- If socket closed at our end (e.g. by disconnect request being sent to
+    -- the socket service) then an error (e.g. threadwait invalid argument
+    -- bad file descriptor) will be thrown in stream. A ThreadKilled 
+    -- exception can also occur when the reader thread is cancelled.
     streamErrorHandler :: SomeException -> IO ()
     streamErrorHandler e =
       debugM $ "connectionReader stream error: " ++ show e
@@ -159,8 +163,14 @@ connectionReader buffer conn nbytes status = managed $ \k -> do
     stream :: Socket -> IO ()
     stream sock = handle streamErrorHandler $ do
       runEffect $ fromSocket sock nbytes >-> toOutput vOut
+      -- If socket closed at IB end then no error will be
+      -- thrown, the effect will terminate and we can clean up
       void $ atomically $ clearSocket conn >> send status False
 
+    -- Will happen when the reader thread is cancelled (ThreadKilled).
+    -- Also occurred in the past when an indefintely blocked on STM txn 
+    -- error occurred due to the reader not being cancelled as part of
+    -- application shutdown 
     ioErrorHandler :: SomeException -> IO ()
     ioErrorHandler e = do
       debugM $ "connectionReader error: " ++ show e
@@ -168,10 +178,19 @@ connectionReader buffer conn nbytes status = managed $ \k -> do
       --throwIO e
 
     io :: IO ()
-    io = handle ioErrorHandler $ forever $ do
+    io = handle ioErrorHandler $ forever $ do      
+      -- Wait until socket is populated
       sock <- atomically $ getSocket conn >>= maybe retry return
-      void $ async $ stream sock
-      void $ atomically $ getSocket conn >>= maybe (return ()) (const retry)
+      -- Spawn a thread to read from the socket. Use withAsync to ensure stream 
+      -- captures threadKilled exceptions
+      withAsync (stream sock) $ \a -> do
+        -- Wait until socket is empty which will happen when the 
+        -- stream thread terminates due to the socket being closed
+        -- by IB or at this end
+        void $ atomically $ getSocket conn >>= maybe (return ()) (const retry)
+        -- Cancel stream thread. No need to update status as that should have
+        -- been done as part of emptying conn
+        cancel a
 
     stop :: Async () -> IO ()
     stop a = do

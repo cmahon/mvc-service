@@ -6,7 +6,6 @@
 
 module MVC.EventHandler where
 
-import           Control.Applicative
 import           Control.Lens
 import           Control.Monad
 import           Control.Monad.Reader             (MonadReader (..))
@@ -15,7 +14,6 @@ import           Control.Monad.Trans.Reader       (ReaderT)
 import qualified Control.Monad.Trans.Reader       as R
 import           Control.Monad.Trans.State.Strict (State, StateT)
 import qualified Control.Monad.Trans.State.Strict as S
-import           Data.Monoid
 import           Pipes
 
 import           MVC.Event                        (EitherSomeEvent,Event,Msg(..),SomeEvent(..),toEitherSomeEvent)

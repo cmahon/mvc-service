@@ -6,7 +6,6 @@
 
 module MVC.Socket where
 
-import           Control.Applicative
 import           Control.Category          ((>>>))
 import           Control.Concurrent        (threadDelay)
 import           Control.Concurrent.Async
@@ -274,14 +273,14 @@ socketService SocketConfiguration{..} = do
 
   conn <- managed $ \k -> newEmptyConnection >>= k
 
-  (vConnection, cConnection, sConnection) <- managed $ \k -> spawn' Unbounded >>= k
+  (vConnection, cConnection, sConnection) <- managed $ \k -> spawn' unbounded >>= k
 
-  cSocketIn <- connectionReader Single conn 4096 vConnection
+  cSocketIn <- connectionReader (bounded 1) conn 4096 vConnection
 
   managed $ \k -> do
 
-    (vServiceIn , cServiceIn , sServiceIn)  <- spawn' Unbounded
-    (vServiceOut, cServiceOut, sServiceOut) <- spawn' Unbounded
+    (vServiceIn , cServiceIn , sServiceIn)  <- spawn' unbounded
+    (vServiceOut, cServiceOut, sServiceOut) <- spawn' unbounded
   
     let
 

@@ -66,7 +66,7 @@ instance Profunctor ManagedService where
 
 instance Category ManagedService where
   id = ManagedService $ managed $ \k -> do 
-    (output, input, seal) <- spawn' Unbounded
+    (output, input, seal) <- spawn' unbounded
     k (Service output input) <* atomically seal
   (ManagedService ms2) . (ManagedService ms1) = ManagedService $ do
     (Service req2 resp2) <- ms2

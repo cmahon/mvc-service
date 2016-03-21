@@ -24,111 +24,74 @@ Library
                           MVC.EventHandler,
                           MVC.Service,
                           MVC.Socket
-  build-depends:          base >= 4 && < 5,
-                          async >= 2.0.1.4,
-                          bytestring >= 0.10.0.2,
-                          data-default >= 0.5.3,
-                          hslogger >= 1.2.4,
-                          hslogger-template >= 2.0.2,
-                          lens >= 4.0,
-                          mtl >= 2.1.2,
-                          mvc >= 1.0.0,
-                          network-simple >= 0.3.0,
-                          pipes >= 4.1.0,
-                          pipes-concurrency >= 2.0.2,
-                          pipes-network >= 0.6.2,
-                          profunctors >= 4.0.0,
-                          stm >= 2.4.2,
-                          transformers >= 0.3.0.0
+  build-depends:          base,
+                          async,
+                          bytestring,
+                          data-default,
+                          hslogger,
+                          hslogger-template,
+                          lens,
+                          mtl,
+                          mvc,
+                          network-simple,
+                          pipes,
+                          pipes-concurrency,
+                          pipes-network,
+                          profunctors,
+                          stm,
+                          transformers
 
 Executable example
   main-is:                Example.hs
   default-language:       Haskell2010
   ghc-options:            -Wall -O2 -threaded
   hs-source-dirs:         executable
-  build-depends:          base >= 4 && < 5,
-                          async >= 2.0.1.4,
-                          mvc >= 1.0.0,
-                          mvc-service >= 0.1,
-                          pipes >= 4.1.0,
-                          pipes-concurrency >= 2.0.2,
-                          profunctors >= 4.0.0,
-                          stm >= 2.4.2
+  build-depends:          base,
+                          async,
+                          mvc,
+                          mvc-service,
+                          pipes,
+                          pipes-concurrency,
+                          profunctors,
+                          stm
 
 Executable sockettestclient
   main-is:                SocketTestClient.hs
   default-language:       Haskell2010
   ghc-options:            -Wall -O2 -threaded -fprof-auto -rtsopts
   hs-source-dirs:         executable
-  build-depends:          base >= 4 && < 5,
-                          async >= 2.0.1.4,
-                          bytestring >= 0.10.0.2,
-                          data-default >= 0.5.3,
-                          hslogger >= 1.2.4,
-                          hslogger-template >= 2.0.2,
-                          lens >= 4.0,
-                          mtl >= 2.1.2,
-                          mvc >= 1.0.0,
-                          mvc-service >= 0.1,
-                          network-simple >= 0.3.0,
-                          pipes >= 4.1.0,
-                          pipes-concurrency >= 2.0.2,
-                          pipes-network >= 0.6.2,
-                          profunctors >= 4.0.0,
-                          stm >= 2.4.2,
-                          transformers >= 0.3.0.0
+  build-depends:          base,
+                          async,
+                          bytestring,
+                          data-default,
+                          hslogger,
+                          hslogger-template,
+                          lens,
+                          mtl,
+                          mvc,
+                          mvc-service,
+                          network-simple,
+                          pipes,
+                          pipes-concurrency,
+                          pipes-network,
+                          profunctors,
+                          stm,
+                          transformers
 
 Executable sockettestserver
   main-is:                SocketTestServer.hs
   default-language:       Haskell2010
   ghc-options:            -Wall -O2 -threaded -fprof-auto -rtsopts
   hs-source-dirs:         executable
-  build-depends:          base >= 4 && < 5,
-                          async >= 2.0.1.4,
-                          bytestring >= 0.10.0.2,
+  build-depends:          base,
+                          async,
+                          bytestring,
                           network,
-                          stm >= 2.4.2
+                          stm
 
 test-suite tasty
   main-is:                Tasty.hs
   build-depends:          base >= 4, tasty, tasty-hunit, tasty-quickcheck, tasty-smallcheck
   default-language:       Haskell2010
   hs-source-dirs:         test-suite
-  type:                   exitcode-stdio-1.0
-
-test-suite doctest
-  main-is:                DocTest.hs
-  build-depends:          base, Glob == 0.*, doctest == 0.*
-  default-language:       Haskell2010
-  hs-source-dirs:         test-suite
-  type:                   exitcode-stdio-1.0
-
-test-suite hpc
-  main-is:                HPC.hs
-  build-depends:          base, process == 1.*, regex-compat == 0.*
-  default-language:       Haskell2010
-  hs-source-dirs:         test-suite
-  type:                   exitcode-stdio-1.0
-
-test-suite haddock
-  main-is:                Haddock.hs
-  build-depends:          base, process == 1.*, regex-compat == 0.*
-  default-language:       Haskell2010
-  hs-source-dirs:         test-suite
-  type:                   exitcode-stdio-1.0
-
-test-suite hlint
-  main-is:                HLint.hs
-  build-depends:          base, hlint == 1.8.*
-  default-language:       Haskell2010
-  hs-source-dirs:         test-suite
-  type:                   exitcode-stdio-1.0
-
-benchmark benchmarks
-  main-is:                Bench.hs
-  build-depends:          base,
-                          mvc-service >= 0.1,
-                          criterion == 0.*
-  default-language:       Haskell2010
-  hs-source-dirs:         benchmark
   type:                   exitcode-stdio-1.0

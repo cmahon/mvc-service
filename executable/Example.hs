@@ -26,10 +26,10 @@ import           Prelude                          hiding (id,(.))
 -- Example 1
 
 msA :: ManagedService String String
-msA = toManagedService $ fromPipe Unbounded Unbounded $ forever $ await >>= \e -> when (e == "do") $ yield "done" 
+msA = toManagedService $ fromPipe unbounded unbounded $ forever $ await >>= \e -> when (e == "do") $ yield "done" 
 
 msB :: ManagedService String String
-msB = toManagedService $ fromPipe Unbounded Unbounded $ forever $ await >>= \e -> when (e == "done") $ yield $ e ++ " (test2)"
+msB = toManagedService $ fromPipe unbounded unbounded $ forever $ await >>= \e -> when (e == "done") $ yield $ e ++ " (test2)"
 
 external :: Managed (View String, Controller String)
 external = do
